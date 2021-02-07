@@ -4,13 +4,33 @@
 #include <iostream>
 #include <stdio.h>
 #include <string.h>
+#include <cmath>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 // Window Size
 const GLint WIDTH = 800, HEIGHT = 600;
+// Value to be able to convert degrees to radians. If we multiply a degree by this, it will output it in radians.
+const float toRadians = 3.14159265f / 180.0f;
 
 // The objects we are going to use to draw our single triangle.
 // If you would draw multiple objects, you'd need multiple VAOs and VBOs
 GLuint VAO, VBO, shader;
+GLuint uniformModel; // a uniform variable that will be used to move the triangle.
+
+bool direction = true; // Direction parameter (for left or right). Here True is right, False is left.
+float triOffset = 0.0f; // Offset of the triangle
+float triMaxOffset = 0.7f; // Maximum offset it can move.
+float triIncrement = 0.005f; // How much to move the offset.
+
+float curAngle = 0.0f; // Current angle. used to rotate continuously.
+
+bool sizeDirection = true; // Sets the size to increasing or decreasing. True for increasing.
+float curSize = 0.4f; // Current size. Used to size up or down continuously.
+float maxSize = 0.8f; // Maximum size allowed
+float minSize = 0.2f; // Minimum size allowed.
 
 // Vertex Shader
 // This shader uses GLSL. It looks a lot like C++ code.
@@ -19,15 +39,21 @@ GLuint VAO, VBO, shader;
 // and set it to location 0. We also say it's an input ("in") and that it's a vector3.
 // Then we work with gl_Position, a variable that handles the final position of our vertex. We tell it to use pos.
 // It has 4 values inside the vector because it uses the homogeneous system. We use 1.0 as the last value because it's a point.
+// The pos is automatically converted to 3 values.
+// model is a uniform variable will be kept the same for each coordinate. So one value across the coordinates.
+// Since model is a matrix, we have to multiply with our vector to apply the change.
+// We multiply each x y z by 0.4 to make the triangle smaller.
 
 static const char* vShader = "                              \n\
  #version 330                                               \n\
                                                             \n\
  layout (location = 0) in vec3 pos;                         \n\
                                                             \n\
+uniform mat4 model;                                         \n\
+                                                            \n\
  void main()                                                \n\
 {                                                           \n\
-    gl_Position = vec4(pos.x, pos.y, pos.z, 1.0);           \n\
+    gl_Position = model * vec4(pos, 1.0);    \n\
 }";
 
 // Fragment Shader
@@ -220,6 +246,10 @@ void CompileShaders()
         printf("Error validating shader program: '%s'\n", eLog);
         return;
     }
+
+    // Get the ID of the uniform variable.
+    uniformModel = glGetUniformLocation(shader, // Program to get the variable from
+        "model"); // Name of the variable in the program.
 }
 
 int main()
@@ -303,6 +333,45 @@ int main()
         // It checks for the events, and then handles them the way it was programmed to.
         glfwPollEvents();
 
+        // If we are going to the right
+        if (direction)
+        {
+            triOffset += triIncrement;
+        }
+        else
+        {
+            triOffset -= triIncrement;
+        }
+
+        // If we are at the max offset, either left or right, we switch direction.
+        if (abs(triOffset) >= triMaxOffset)
+        {
+            direction = !direction;
+        }
+
+        // Rotating continuously.
+        curAngle += 0.1f;
+        if (curAngle >= 360)
+        {
+            curAngle = 0;
+        }
+
+        // Increasing and decreasing dimensions continuously.
+        if (sizeDirection)
+        {
+            curSize += 0.001f;
+        }
+        else
+        {
+            curSize -= 0.001f;
+        }
+
+        // If we are at max or min size, switch the scale direction.
+        if (curSize >= maxSize || curSize <= minSize)
+        {
+            sizeDirection = !sizeDirection;
+        }
+
         // Clear window. Clears the entire screen. Set a color to clear it to.
         // This is in 0 to 1 scale. Take any RGB, divide by 256, and you get your value.
         // Alpha with value of 1 is opaque. 0 is invisible.
@@ -315,6 +384,40 @@ int main()
         glUseProgram(shader);
             // We indent here to show that we are using the shader that is above until it is no longer in use.
             
+            glm::mat4 model(1.0f); // creating a 4x4 matrix, to identity 
+
+            // The translation and Rotation happen in REVERSE order than listed in the code. So rotate will be first.
+
+            // Calculating the translation
+            // We apply a translation to the identity matrix.
+            model = glm::translate(
+                model, // Matrix we want to perform the calculations on
+                glm::vec3(triOffset, triOffset, 0.0f) // Passing a vec3 with the 3 values we want to make the transformation be
+            );
+
+            // Rotating our model
+            model = glm::rotate(
+                model, // What we are applying the rotation to
+                curAngle * toRadians, // The value to rotate by, in radians
+                glm::vec3(0.0f, 0.0f, 1.0f) // Axis of rotation. We rotate around Z now. Basically, the vector is a line that starts from origin. It goes outwards on the Z axis, away from camera.
+                // We rotate around that line.
+                // The rotation will take place at the origin relative to the object.
+                );
+
+            // Scaling up or down our model.
+            model = glm::scale(
+                model, // what we are scaling
+                glm::vec3(curSize, curSize, 1.0f) // the axises we are scaling, and by how much. Here we say 2x, 2y, 1z (which keeps scale)
+            );
+
+            // Reassigning the uniform variable. So now we want to assign a matrix, 4x4, with float values.
+            glUniformMatrix4fv(uniformModel, // Value to change
+                1, // How many matrices to pass
+                GL_FALSE, // Transpose?
+                glm::value_ptr(model)); // Our value. Can't pass our value directly. We need to use a pointer.
+
+            glUniform1f(uniformModel, triOffset);
+
             // We want to work with our created VAO.
             glBindVertexArray(VAO);
                 // We indent to show we are working with this VAO from here on.  
