@@ -1,0 +1,5 @@
+﻿  main.cpp
+  Window.cpp
+  Generating Code...
+D:\Users\Joel\Documents\GitHub\OpenGLUdemy\Projects\OpenGLCourseApp\OpenGLCourseApp\OpenGLCourseApp\Window.cpp(103): warning C4715: 'Window::Initialize': not all control paths return a value
+  OpenGLCourseApp.vcxproj -> D:\Users\Joel\Documents\GitHub\OpenGLUdemy\Projects\OpenGLCourseApp\OpenGLCourseApp\Debug\OpenGLCourseApp.exe

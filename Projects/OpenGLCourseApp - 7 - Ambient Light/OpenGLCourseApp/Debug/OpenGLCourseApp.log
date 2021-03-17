@@ -1,0 +1,6 @@
+﻿  main.cpp
+D:\Users\Joel\Documents\GitHub\OpenGLUdemy\Projects\OpenGLCourseApp\OpenGLCourseApp\main.cpp(104,24): warning C4244: '=': conversion from 'double' to 'GLfloat', possible loss of data
+D:\Users\Joel\Documents\GitHub\OpenGLUdemy\Projects\OpenGLCourseApp\OpenGLCourseApp\main.cpp(109,15): warning C4244: 'initializing': conversion from 'double' to 'GLfloat', possible loss of data
+D:\Users\Joel\Documents\GitHub\OpenGLUdemy\Projects\OpenGLCourseApp\OpenGLCourseApp\main.cpp(132,47): warning C4244: 'argument': conversion from 'GLuint' to 'GLfloat', possible loss of data
+D:\Users\Joel\Documents\GitHub\OpenGLUdemy\Projects\OpenGLCourseApp\OpenGLCourseApp\main.cpp(132,22): warning C4244: 'argument': conversion from 'GLuint' to 'GLfloat', possible loss of data
+  OpenGLCourseApp.vcxproj -> D:\Users\Joel\Documents\GitHub\OpenGLUdemy\Projects\OpenGLCourseApp\Debug\OpenGLCourseApp.exe

@@ -1,0 +1,6 @@
+﻿  Light.cpp
+D:\Users\Joel\Documents\GitHub\OpenGLUdemy\Projects\OpenGLCourseApp\OpenGLCourseApp\Light.cpp(23,14): warning C4244: 'argument': conversion from 'GLfloat' to 'GLint', possible loss of data
+D:\Users\Joel\Documents\GitHub\OpenGLUdemy\Projects\OpenGLCourseApp\OpenGLCourseApp\Light.cpp(24,14): warning C4244: 'argument': conversion from 'GLfloat' to 'GLint', possible loss of data
+D:\Users\Joel\Documents\GitHub\OpenGLUdemy\Projects\OpenGLCourseApp\OpenGLCourseApp\Light.cpp(26,14): warning C4244: 'argument': conversion from 'GLfloat' to 'GLint', possible loss of data
+D:\Users\Joel\Documents\GitHub\OpenGLUdemy\Projects\OpenGLCourseApp\OpenGLCourseApp\Light.cpp(27,14): warning C4244: 'argument': conversion from 'GLfloat' to 'GLint', possible loss of data
+  OpenGLCourseApp.vcxproj -> D:\Users\Joel\Documents\GitHub\OpenGLUdemy\Projects\OpenGLCourseApp\Debug\OpenGLCourseApp.exe

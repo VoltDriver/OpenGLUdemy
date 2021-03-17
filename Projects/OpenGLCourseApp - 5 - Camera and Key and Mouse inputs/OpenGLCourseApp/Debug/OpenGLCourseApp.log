@@ -1,0 +1,10 @@
+﻿  Camera.cpp
+  Window.cpp
+D:\Users\Joel\Documents\GitHub\OpenGLUdemy\Projects\OpenGLCourseApp\OpenGLCourseApp\Window.cpp(162,22): warning C4244: '=': conversion from 'double' to 'GLfloat', possible loss of data
+D:\Users\Joel\Documents\GitHub\OpenGLUdemy\Projects\OpenGLCourseApp\OpenGLCourseApp\Window.cpp(163,22): warning C4244: '=': conversion from 'double' to 'GLfloat', possible loss of data
+D:\Users\Joel\Documents\GitHub\OpenGLUdemy\Projects\OpenGLCourseApp\OpenGLCourseApp\Window.cpp(167,28): warning C4244: '=': conversion from 'double' to 'GLfloat', possible loss of data
+D:\Users\Joel\Documents\GitHub\OpenGLUdemy\Projects\OpenGLCourseApp\OpenGLCourseApp\Window.cpp(169,40): warning C4244: '=': conversion from 'double' to 'GLfloat', possible loss of data
+D:\Users\Joel\Documents\GitHub\OpenGLUdemy\Projects\OpenGLCourseApp\OpenGLCourseApp\Window.cpp(171,21): warning C4244: '=': conversion from 'double' to 'GLfloat', possible loss of data
+D:\Users\Joel\Documents\GitHub\OpenGLUdemy\Projects\OpenGLCourseApp\OpenGLCourseApp\Window.cpp(172,21): warning C4244: '=': conversion from 'double' to 'GLfloat', possible loss of data
+  Generating Code...
+  OpenGLCourseApp.vcxproj -> D:\Users\Joel\Documents\GitHub\OpenGLUdemy\Projects\OpenGLCourseApp\Debug\OpenGLCourseApp.exe
