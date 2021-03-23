@@ -47,5 +47,4 @@ ShadowMap* Light::GetShadowMap()
 
 Light::~Light() 
 {
-	delete shadowMap;
 }

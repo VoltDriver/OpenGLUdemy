@@ -6,7 +6,7 @@ ShadowMap::ShadowMap()
     shadowMap = 0;
 }
 
-bool ShadowMap::Init(GLuint width, GLuint height)
+bool ShadowMap::Init(unsigned int width, unsigned int height)
 {
     shadowWidth = width;
     shadowHeight = height;
@@ -15,7 +15,7 @@ bool ShadowMap::Init(GLuint width, GLuint height)
 
     glGenTextures(1, &shadowMap);
     glBindTexture(GL_TEXTURE_2D, shadowMap);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadowWidth, shadowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 
 	// Setting texture parameters
 	glTexParameteri(GL_TEXTURE_2D, // Type of Texture
@@ -33,16 +33,16 @@ bool ShadowMap::Init(GLuint width, GLuint height)
 
 	glTexParameteri(GL_TEXTURE_2D, // Type of Texture
 		GL_TEXTURE_MIN_FILTER, // Which parameter to change. Here, we change the way the texture interacts when we zoom out on it.
-		GL_NEAREST // The value.  Here, we could also use GL_LINEAR. It's personnal preference.
+		GL_LINEAR // The value.  Here, we could also use GL_LINEAR. It's personnal preference.
 	);
 	glTexParameteri(GL_TEXTURE_2D, // Type of Texture
 		GL_TEXTURE_MAG_FILTER, // Which parameter to change. Here, we change the way the texture interacts when we zoom in on it.
-		GL_NEAREST // The value. Here, we could also use GL_LINEAR. It's personnal preference.
+		GL_LINEAR // The value. Here, we could also use GL_LINEAR. It's personnal preference.
 	);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBO);
 	// Connects the frame buffer to the texture, so that when the frame buffer is updated it is rendered in the texture.
-	glFramebufferTexture2D(GL_FRAMEBUFFER, // Target
+	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, // Target
 						   GL_DEPTH_ATTACHMENT, // Which part we should attach and write to the texture
 						   GL_TEXTURE_2D, // Type to write to.
 						   shadowMap, // ID of the texture to write to
@@ -62,14 +62,14 @@ bool ShadowMap::Init(GLuint width, GLuint height)
 	}
 
 	// Unbinding buffer
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	return true;
 }
 
 void ShadowMap::Write()
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, FBO); // Binding buffer
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBO); // Binding buffer
 }
 
 void ShadowMap::Read(GLenum textureUnit)

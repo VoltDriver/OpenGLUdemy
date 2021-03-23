@@ -3,10 +3,9 @@
 DirectionalLight::DirectionalLight() : Light()
 {
 	direction = glm::vec3(0.0f, -1.0f, 0.0f); // by default, pointing straigth down.
-	lightProj = glm::ortho(-5.0f, 5.0f, -5.0f, 5.0f, 0.1f, 20.0f);
 }
 
-DirectionalLight::DirectionalLight(GLfloat shadowWidth, GLfloat shadowHeight,
+DirectionalLight::DirectionalLight(GLuint shadowWidth, GLuint shadowHeight,
 	GLfloat red, GLfloat green, GLfloat blue, GLfloat aIntensity, GLfloat dIntensity, GLfloat xDirection, GLfloat yDirection, GLfloat zDirection)
 	: Light(shadowWidth, shadowHeight,
 		red, green, blue, aIntensity, dIntensity)

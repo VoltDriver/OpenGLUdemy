@@ -64,9 +64,9 @@ float CalcDirectionalShadowFactor(DirectionalLight light)
 	
 	// Setting up the shadow bias, to avoid shadow acne phenomenon
 	vec3 newNormal = normalize(normal);
-	vec3 lightDir = normalize(light.direction);
+	vec3 lightDir = normalize(directionalLight.direction); // Dunno if it's directionalLight.direction or light.direction.
 	
-	float bias = max(0.05 * (1 - dot(normal, lightDir)), 0.005);
+	float bias = max(0.05 * (1.0 - dot(newNormal, lightDir)), 0.0005);
 	
 	// Doing PCF to make the shadows look smoother
 	float shadow = 0.0;

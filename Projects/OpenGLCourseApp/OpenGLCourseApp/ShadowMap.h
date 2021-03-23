@@ -9,7 +9,7 @@ class ShadowMap
 	public:
 		ShadowMap();
 
-		virtual bool Init(GLuint width, GLuint height);
+		virtual bool Init(unsigned int width, unsigned int height);
 
 		virtual void Write();
 
