@@ -15,8 +15,8 @@ class ShadowMap
 
 		virtual void Read(GLenum textureUnit);
 
-		GLuint GetShadowWidth();
-		GLuint GetShadowHeight();
+		virtual GLuint GetShadowWidth();
+		virtual GLuint GetShadowHeight();
 
 		~ShadowMap();
 
