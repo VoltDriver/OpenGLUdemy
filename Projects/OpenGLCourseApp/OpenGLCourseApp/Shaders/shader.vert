@@ -9,6 +9,8 @@ layout (location = 2) in vec3 norm;
 out vec4 vCol;
 out vec2 texCoord;
 out vec3 normal;
+// Position of the fragment
+out vec3 fragPos;
 
 uniform mat4 model;
 uniform mat4 projection;
@@ -27,4 +29,10 @@ void main()
 	// But also, the rotation changes our norm in a way we want to, but the scaling changes the normal in a way we dont want to!
 	// So we have to avoid scaling, while taking in rotation. The trick to do that is to transpose and inverse the matrix, this reverses the scaling.
 	normal = mat3(transpose(inverse(model))) * norm;
+	
+	// Just gives you where it is in the world, without taking into care the "view" or camera
+	// We don't need a vec4 though, we need a vec3. So we use Swizzling (using .xyz at the end).
+	// Swizzling will create a vector only using the variables we put in at the end. So will create a vec3(x, y, z).
+	// We could also do sampleVector.xyy to get a vec3(x, y, y).
+	fragPos = (model * vec4(pos, 1.0)).xyz;
 }

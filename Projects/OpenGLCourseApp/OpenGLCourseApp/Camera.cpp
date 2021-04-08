@@ -68,6 +68,11 @@ void Camera::mouseControl(GLfloat xChange, GLfloat yChange)
 	update(); // Recalculating the new camera angles and how to display the view.
 }
 
+glm::vec3 Camera::getCameraPosition()
+{
+	return position;
+}
+
 glm::mat4 Camera::calculateViewMatrix()
 {
 	// This is designed for cameras, to calculate a matrix that applies all correct transformations to look at something from a given position.

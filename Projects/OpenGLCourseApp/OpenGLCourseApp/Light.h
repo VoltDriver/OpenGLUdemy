@@ -9,7 +9,7 @@ class Light
 		Light();
 		Light(GLfloat red, GLfloat green, GLfloat blue, GLfloat aIntensity, 
 			GLfloat xDirection, GLfloat yDirection, GLfloat zDirection, GLfloat dIntensity);
-		
+
 		// NOTE: For location variables, it should be GLuint. Float works but is not... appropriate.
 		void UseLight(GLfloat ambientIntensityLocation, GLfloat ambientColourLocation,
 			GLfloat diffuseIntensityLocation, GLfloat directionLocation);
