@@ -128,6 +128,11 @@ void Shader::CompileShader(const char* vertexCode, const char* fragmentCode)
 		snprintf(locationBuffer, sizeof(locationBuffer), "pointLights[%d].exponent", i); // base is the base struct in the shader.
 		uniformPointLight[i].uniformExponent = glGetUniformLocation(shaderID, locationBuffer);
 	}
+
+	uniformTexture = glGetUniformLocation(shaderID, "theTexture");
+	uniformDirectionalLightTransform = glGetUniformLocation(shaderID, "directionalLightTransform");// Because the name of the variable, directionalLightTransform, is the same name across
+	// both our shaders (shader.vert and shadow_map.vert), we dont have to do it twice. It will be bound for both of them.
+	uniformDirectionalShadowMap = glGetUniformLocation(shaderID, "directionalShadowMap");
 }
 
 GLuint Shader::GetProjectionLocation()
@@ -179,6 +184,21 @@ GLuint Shader::GetShininessLocation()
 	return uniformShininess;
 }
 
+GLuint Shader::GetTextureLocation()
+{
+	return uniformTexture;
+}
+
+GLuint Shader::GetDirectionalLightTransformLocation()
+{
+	return uniformDirectionalLightTransform;
+}
+
+GLuint Shader::GetDirectionalShadowMapLocation()
+{
+	return uniformDirectionalShadowMap;
+}
+
 void Shader::SetDirectionalLight(DirectionalLight* dLight)
 {
 	dLight->UseLight(uniformDirectionalLight.uniformAmbientIntensity, uniformDirectionalLight.uniformColour,
@@ -200,6 +220,21 @@ void Shader::SetPointLights(PointLight* pLight, unsigned int lightCount)
 			uniformPointLight[i].uniformPosition,
 			uniformPointLight[i].uniformConstant, uniformPointLight[i].uniformLinear, uniformPointLight[i].uniformExponent);
 	}
+}
+
+void Shader::SetTexture(GLuint textureUnit)
+{
+	glUniform1i(uniformTexture, textureUnit);
+}
+
+void Shader::SetDirectionalShadowMap(GLuint textureUnit)
+{
+	glUniform1i(uniformDirectionalShadowMap, textureUnit);
+}
+
+void Shader::SetDirectionalLightTransform(glm::mat4* lTransform)
+{
+	glUniformMatrix4fv(uniformDirectionalLightTransform, 1, GL_FALSE, glm::value_ptr(*lTransform));
 }
 
 void Shader::UseShader()

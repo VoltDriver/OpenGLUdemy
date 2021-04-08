@@ -27,9 +27,15 @@
 
 const float toRadians = 3.14159265f / 180.0f;
 
+GLuint uniformProjection = 0, uniformModel = 0, uniformView = 0,
+uniformEyePosition = 0,
+uniformSpecularIntensity = 0, uniformShininess = 0,
+uniformDirectionalLightTransform = 0;
+
 Window mainWindow;
 std::vector<Mesh*> meshList;
 std::vector<Shader> shaderList;
+Shader directionalShadowShader;
 Camera camera;
 
 // Textures
@@ -40,6 +46,7 @@ Texture plainTexture;
 // Lights
 DirectionalLight mainLight;
 PointLight pointLights[MAX_POINT_LIGHTS];
+unsigned int pointLightCount = 0;
 
 // Materials
 Material shinyMaterial;
@@ -53,184 +60,6 @@ static const char* vShader = "Shaders/shader.vert";
 
 // Fragment Shader
 static const char* fShader = "Shaders/shader.frag";
-
-void CalcAverageNormals(unsigned int * indices, unsigned int indiceCount, 
-	GLfloat * vertices, unsigned int verticeCount, unsigned int vertexLength, unsigned int normalOffset);
-
-void CreateObjects() 
-{
-	unsigned int indices[] = {
-		0, 3, 1,
-		1, 3, 2,
-		2, 3, 0,
-		0, 1, 2
-	};
-
-	// U(S) and V(T) values are the UV values, i.e. coordinate of the textures.
-	// Norm values are values of the normal to that vertex/
-	GLfloat vertices[] = {
-	//	X		Y	   Z	U(S)  V(T)		NormX NormY NormZ
-		-1.0f, -1.0f, -0.6f, 0.0f, 0.0f,		0.0f, 0.0f, 0.0f,
-		0.0f, -1.0f, 1.0f,  0.5f, 0.0f,		0.0f, 0.0f, 0.0f,
-		1.0f, -1.0f, -0.6f,  1.0f, 0.0f,		0.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f,   0.5f, 1.0f,		0.0f, 0.0f, 0.0f
-	};
-
-	// Indices for the floor of the world.
-	unsigned int floorIndices[] = {
-		0, 2, 1,
-		1, 2, 3
-	};
-
-	// Floor of the world.
-	GLfloat floorVertices[] = {
-		-10.0f, 0.0f, -10.0f,	0.0f, 0.0f,		0.0f, -1.0f, 0.0f, // Top left.
-		10.0f, 0.0f, -10.0f,	10.0f, 0.0f,	0.0f, -1.0f, 0.0f, // Top right. We are TILING the texture, so we want it to appear 10 times on the surface.
-		-10.0f, 0.0f, 10.0f,	0.0f, 10.0f,	0.0f, -1.0f, 0.0f, // Bottom left.
-		10.0f, 0.0f, 10.0f,		10.0f, 10.0f,	0.0f, -1.0f, 0.0f // Bottom right.
-	};
-
-	CalcAverageNormals(indices, 12, vertices, 32, 8, 5);
-
-	Mesh *obj1 = new Mesh();
-	obj1->CreateMesh(vertices, indices, 32, 12);
-	meshList.push_back(obj1);
-
-	Mesh *obj2 = new Mesh();
-	obj2->CreateMesh(vertices, indices, 32, 12);
-	meshList.push_back(obj2);
-
-	Mesh* floor = new Mesh();
-	floor->CreateMesh(floorVertices, floorIndices, 32, 6);
-	meshList.push_back(floor);
-}
-
-void CreateShaders()
-{
-	Shader *shader1 = new Shader();
-	shader1->CreateFromFiles(vShader, fShader);
-	shaderList.push_back(*shader1);
-}
-
-int main() 
-{
-
-	mainWindow = Window(1366, 768); // Standard widescreen.
-	mainWindow.Initialise();
-
-	CreateObjects();
-	CreateShaders();
-
-	camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f, 5.0f, 1.0f);
-
-	// Creating textures
-	brickTexture = Texture("Textures/brick.png");
-	brickTexture.LoadTexture();
-
-	dirtTexture = Texture("Textures/dirt.png");
-	dirtTexture.LoadTexture();
-
-	plainTexture = Texture("Textures/plain.png");
-	plainTexture.LoadTexture();
-
-	// Creating lights
-	mainLight = DirectionalLight(1.0f, 1.0f, 1.0f, 
-								 0.0f, 0.0f,
-								 2.0f, -1.0f, -2.0f);
-	
-	unsigned int pointLightCount = 0;
-
-	pointLights[0] = PointLight(0.0f, 0.0f, 1.0f,
-								0.1f, 0.4f,
-								0.0f, 0.0f, 0.0f,
-								0.3f, 0.2f, 0.1f);
-	pointLightCount++;
-
-	pointLights[1] = PointLight(0.0f, 1.0f, 0.0f,
-								0.1f, 1.0f,
-								-4.0f, 2.0f, 0.0f,
-								0.3f, 0.1f, 0.1f);
-	pointLightCount++;
-
-	// Creating Materials
-
-	// A shine is usually a form of 2, a power of 2. 32 is common for the average shiny object.
-	shinyMaterial = Material(4.0f, 256);
-	dullMaterial = Material(0.3f, 4);
-
-	GLuint uniformProjection = 0, uniformModel = 0, uniformView = 0, 
-		uniformEyePosition = 0,
-		uniformSpecularIntensity = 0, uniformShininess = 0;
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (GLfloat)mainWindow.getBufferWidth() / mainWindow.getBufferHeight(), 0.1f, 100.0f);
-
-	lastTime = glfwGetTime(); // Initializing the time.
-
-	// Loop until window closed
-	while (!mainWindow.getShouldClose())
-	{
-		GLfloat now = glfwGetTime(); // Gets the current time (seconds, system time)
-		deltaTime = now - lastTime; // calculating the time difference between last time in the loop and now.
-		lastTime = now;
-
-		// Get + Handle User Input
-		glfwPollEvents();
-
-		// Handle camera control with keys
-		camera.keyControl(mainWindow.getKeys(), deltaTime);
-		// Handle camera control with mouse
-		camera.mouseControl(mainWindow.getXChange(), mainWindow.getYChange());
-
-		// Clear the window
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		shaderList[0].UseShader();
-		uniformModel = shaderList[0].GetModelLocation();
-		uniformProjection = shaderList[0].GetProjectionLocation();
-		uniformView = shaderList[0].GetViewLocation();
-		uniformEyePosition = shaderList[0].GetEyePositionLocation();
-		uniformSpecularIntensity = shaderList[0].GetSpecularIntensityLocation();
-		uniformShininess = shaderList[0].GetShininessLocation();
-
-		shaderList[0].SetDirectionalLight(&mainLight);
-		shaderList[0].SetPointLights(pointLights, pointLightCount);
-
-		glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
-		glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(camera.calculateViewMatrix())); // USes the camera to get our view matrix.
-		glUniform3f(uniformEyePosition, camera.getCameraPosition().x, camera.getCameraPosition().y, camera.getCameraPosition().z);
-
-		glm::mat4 model(1.0f);	
-
-		model = glm::translate(model, glm::vec3(0.0f, 0.0f, -2.5f));
-		//model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f));
-		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-		brickTexture.UseTexture();
-		shinyMaterial.UseMaterial(uniformSpecularIntensity, uniformShininess);
-		meshList[0]->RenderMesh();
-
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, 4.0f, -2.5f));
-		//model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f));
-		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-		dirtTexture.UseTexture();
-		dullMaterial.UseMaterial(uniformSpecularIntensity, uniformShininess);
-		meshList[1]->RenderMesh();
-
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, -2.0f, 0.0f));
-		//model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f));
-		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
-		plainTexture.UseTexture();
-		shinyMaterial.UseMaterial(uniformSpecularIntensity, uniformShininess);
-		meshList[2]->RenderMesh();
-
-		glUseProgram(0);
-
-		mainWindow.swapBuffers();
-	}
-
-	return 0;
-}
 
 void CalcAverageNormals(unsigned int* indices, unsigned int indiceCount, GLfloat* vertices, unsigned int verticeCount, unsigned int vertexLength, unsigned int normalOffset)
 {
@@ -289,4 +118,221 @@ void CalcAverageNormals(unsigned int* indices, unsigned int indiceCount, GLfloat
 		vertices[nOffset + 1] = vec.y;
 		vertices[nOffset + 2] = vec.z;
 	}
+}
+
+void CreateObjects() 
+{
+	unsigned int indices[] = {
+		0, 3, 1,
+		1, 3, 2,
+		2, 3, 0,
+		0, 1, 2
+	};
+
+	// U(S) and V(T) values are the UV values, i.e. coordinate of the textures.
+	// Norm values are values of the normal to that vertex/
+	GLfloat vertices[] = {
+	//	X		Y	   Z	U(S)  V(T)		NormX NormY NormZ
+		-1.0f, -1.0f, -0.6f, 0.0f, 0.0f,		0.0f, 0.0f, 0.0f,
+		0.0f, -1.0f, 1.0f,  0.5f, 0.0f,		0.0f, 0.0f, 0.0f,
+		1.0f, -1.0f, -0.6f,  1.0f, 0.0f,		0.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f,   0.5f, 1.0f,		0.0f, 0.0f, 0.0f
+	};
+
+	// Indices for the floor of the world.
+	unsigned int floorIndices[] = {
+		0, 2, 1,
+		1, 2, 3
+	};
+
+	// Floor of the world.
+	GLfloat floorVertices[] = {
+		-10.0f, 0.0f, -10.0f,	0.0f, 0.0f,		0.0f, -1.0f, 0.0f, // Top left.
+		10.0f, 0.0f, -10.0f,	10.0f, 0.0f,	0.0f, -1.0f, 0.0f, // Top right. We are TILING the texture, so we want it to appear 10 times on the surface.
+		-10.0f, 0.0f, 10.0f,	0.0f, 10.0f,	0.0f, -1.0f, 0.0f, // Bottom left.
+		10.0f, 0.0f, 10.0f,		10.0f, 10.0f,	0.0f, -1.0f, 0.0f // Bottom right.
+	};
+
+	CalcAverageNormals(indices, 12, vertices, 32, 8, 5);
+
+	Mesh *obj1 = new Mesh();
+	obj1->CreateMesh(vertices, indices, 32, 12);
+	meshList.push_back(obj1);
+
+	Mesh *obj2 = new Mesh();
+	obj2->CreateMesh(vertices, indices, 32, 12);
+	meshList.push_back(obj2);
+
+	Mesh* floor = new Mesh();
+	floor->CreateMesh(floorVertices, floorIndices, 32, 6);
+	meshList.push_back(floor);
+}
+
+void CreateShaders()
+{
+	Shader *shader1 = new Shader();
+	shader1->CreateFromFiles(vShader, fShader);
+	shaderList.push_back(*shader1);
+
+	directionalShadowShader.CreateFromFiles("shaders/directional_shadow_map.vert", "shaders/directional_shadow_map.frag");
+}
+
+void RenderScene()
+{
+	glm::mat4 model(1.0f);
+
+	model = glm::translate(model, glm::vec3(0.0f, 0.0f, -2.5f));
+	glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+	brickTexture.UseTexture();
+	shinyMaterial.UseMaterial(uniformSpecularIntensity, uniformShininess);
+	meshList[0]->RenderMesh();
+
+	model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(0.0f, 4.0f, -2.5f));
+	glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+	dirtTexture.UseTexture();
+	dullMaterial.UseMaterial(uniformSpecularIntensity, uniformShininess);
+	meshList[1]->RenderMesh();
+
+	model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(0.0f, -2.0f, 0.0f));
+	glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+	dirtTexture.UseTexture();
+	shinyMaterial.UseMaterial(uniformSpecularIntensity, uniformShininess);
+	meshList[2]->RenderMesh();
+}
+
+void DirectionalShadowMapPass(DirectionalLight* light)
+{
+	directionalShadowShader.UseShader();
+
+	// Makes sure the frame buffer we use is same size as the viewport. We set up the viewport to do so.
+	glViewport(0, 0, light->GetShadowMap()->GetShadowWidth(), light->GetShadowMap()->GetShadowHeight());
+
+	light->GetShadowMap()->Write(); // Setting the map to write mode.
+	glClear(GL_DEPTH_BUFFER_BIT); // Clear out the buffer.
+
+	uniformModel = directionalShadowShader.GetModelLocation();
+	directionalShadowShader.SetDirectionalLightTransform(&light->CalculateLightTransform());
+
+	RenderScene();
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0); // Unbinding the default buffer
+}
+
+void RenderPass(glm::mat4 viewMatrix, glm::mat4 projectionMatrix)
+{
+	// If we just did the shadow pass, we would have the wrong shader attached. SO we attach the right one.
+	shaderList[0].UseShader();
+
+	uniformModel = shaderList[0].GetModelLocation();
+	uniformProjection = shaderList[0].GetProjectionLocation();
+	uniformView = shaderList[0].GetViewLocation();
+	uniformEyePosition = shaderList[0].GetEyePositionLocation();
+	uniformSpecularIntensity = shaderList[0].GetSpecularIntensityLocation();
+	uniformShininess = shaderList[0].GetShininessLocation();
+
+	glViewport(0, 0, 1366, 768); // Would be cleaner if handled by the Window class, but still. Size matches size of window.
+
+	// Clear the window
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
+	glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(viewMatrix)); // Uses the camera to get our view matrix.
+	glUniform3f(uniformEyePosition, camera.getCameraPosition().x, camera.getCameraPosition().y, camera.getCameraPosition().z);
+
+	shaderList[0].SetDirectionalLight(&mainLight);
+	shaderList[0].SetPointLights(pointLights, pointLightCount);
+	shaderList[0].SetDirectionalLightTransform(&mainLight.CalculateLightTransform());
+
+	// GL_TEXTURE0 is already bound to our pyramid texture, so we have to use another one.
+	// So with this, theTexture in our Shader will be Texture0 and directionalShadowMap will be Texture1
+	mainLight.GetShadowMap()->Read(GL_TEXTURE1);
+	shaderList[0].SetTexture(0); // 0 is our pyramid texture unit
+	shaderList[0].SetDirectionalShadowMap(1); // 1 is our shadow map texture unit.
+
+	RenderScene();
+}
+
+int main() 
+{
+	mainWindow = Window(1366, 768); // Standard widescreen.
+	mainWindow.Initialise();
+
+	CreateObjects();
+	CreateShaders();
+
+	camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), -60.0f, 0.0f, 5.0f, 0.5f);
+
+	// Creating textures
+	brickTexture = Texture("Textures/brick.png");
+	brickTexture.LoadTexture();
+
+	dirtTexture = Texture("Textures/dirt.png");
+	dirtTexture.LoadTexture();
+
+	plainTexture = Texture("Textures/plain.png");
+	plainTexture.LoadTexture();
+
+	// Creating lights
+	mainLight = DirectionalLight(2048, 2048,
+								 1.0f, 1.0f, 1.0f, 
+								 0.1f, 0.3f,
+								 0.0f, -15.0f, -10.0f);
+	// Initializing shadow map
+	mainLight.InitShadowMap();
+
+	/*
+	pointLights[0] = PointLight(0.0f, 0.0f, 1.0f,
+								0.0f, 0.1f,
+								0.0f, 0.0f, 0.0f,
+								0.3f, 0.2f, 0.1f);
+	pointLights[0].InitShadowMap();
+	pointLightCount++;
+
+	pointLights[1] = PointLight(0.0f, 1.0f, 0.0f,
+								0.0f, 0.1f,
+								-4.0f, 2.0f, 0.0f,
+								0.3f, 0.1f, 0.1f);
+	pointLights[1].InitShadowMap();
+	pointLightCount++;*/
+
+	GLuint uniformProjection = 0, uniformModel = 0, uniformView = 0, uniformEyePosition = 0,
+		uniformSpecularIntensity = 0, uniformShininess = 0;
+
+	// Creating Materials
+
+	// A shine is usually a form of 2, a power of 2. 32 is common for the average shiny object.
+	shinyMaterial = Material(4.0f, 256);
+	dullMaterial = Material(0.3f, 4);
+
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (GLfloat)mainWindow.getBufferWidth() / mainWindow.getBufferHeight(), 0.1f, 100.0f);
+
+	lastTime = glfwGetTime(); // Initializing the time.
+
+	// Loop until window closed
+	while (!mainWindow.getShouldClose())
+	{
+		GLfloat now = glfwGetTime(); // Gets the current time (seconds, system time)
+		deltaTime = now - lastTime; // calculating the time difference between last time in the loop and now.
+		lastTime = now;
+
+		// Get + Handle User Input
+		glfwPollEvents();
+
+		// Handle camera control with keys
+		camera.keyControl(mainWindow.getKeys(), deltaTime);
+		// Handle camera control with mouse
+		camera.mouseControl(mainWindow.getXChange(), mainWindow.getYChange());
+		
+		DirectionalShadowMapPass(&mainLight); // Doing a directional shadow map pass for this light.
+		RenderPass(camera.calculateViewMatrix(), projection);
+
+		glUseProgram(0);
+
+		mainWindow.swapBuffers();
+	}
+
+	return 0;
 }

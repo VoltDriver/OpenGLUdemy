@@ -9,16 +9,23 @@ layout (location = 2) in vec3 norm;
 out vec4 vCol;
 out vec2 texCoord;
 out vec3 normal;
+
 // Position of the fragment
 out vec3 fragPos;
+
+out vec4 directionalLightSpacePos; // The position of where the fragment is relative to the light.
 
 uniform mat4 model;
 uniform mat4 projection;
 uniform mat4 view;
+uniform mat4 directionalLightTransform;
 
 void main()
 {
 	gl_Position = projection * view * model * vec4(pos, 1.0);
+	
+	directionalLightSpacePos = directionalLightTransform * model * vec4(pos, 1.0);
+	
 	vCol = vec4(clamp(pos, 0.0f, 1.0f), 1.0f);
 	
 	texCoord = tex;
