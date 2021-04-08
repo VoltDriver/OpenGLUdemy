@@ -7,6 +7,10 @@
 
 #include <GL\glew.h>
 
+#include "DirectionalLight.h"
+#include "PointLight.h"
+#include "CommonValues.h"
+
 class Shader
 {
 public:
@@ -28,17 +32,42 @@ public:
 	GLuint GetSpecularIntensityLocation();
 	GLuint GetShininessLocation();
 
+	void SetDirectionalLight(DirectionalLight* dLight);
+	void SetPointLights(PointLight* pLight, unsigned int lightCount);
+
 	void UseShader();
 	void ClearShader();
 
 	~Shader();
 
 private:
-	GLuint shaderID, uniformProjection, uniformModel, 
-		uniformView, uniformAmbientIntensity, uniformAmbientColour,
-		uniformDiffuseIntensity, uniformDirection,
+	int pointLightCount; // With multiple lights, now each light has its own values at different locations in the GPU...
+
+	GLuint shaderID, uniformProjection, uniformModel, uniformView,
 		uniformEyePosition,
 		uniformSpecularIntensity, uniformShininess;
+
+	// Has no name, but is an instance referenced by variable name "uniformDirectionalLight"
+	struct {
+		GLuint uniformColour;
+		GLuint uniformAmbientIntensity;
+		GLuint uniformDiffuseIntensity;
+
+		GLuint uniformDirection;
+	} uniformDirectionalLight;
+
+	GLuint uniformPointLightCount;
+
+	struct {
+		GLuint uniformColour;
+		GLuint uniformAmbientIntensity;
+		GLuint uniformDiffuseIntensity;
+
+		GLuint uniformPosition;
+		GLuint uniformConstant;
+		GLuint uniformLinear;
+		GLuint uniformExponent;
+	} uniformPointLight[MAX_POINT_LIGHTS]; // We want to handle multiple point lights.
 
 	void CompileShader(const char* vertexCode, const char* fragmentCode);
 	void AddShader(GLuint theProgram, const char* shaderCode, GLenum shaderType);
