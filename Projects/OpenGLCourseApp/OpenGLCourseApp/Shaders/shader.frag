@@ -34,6 +34,12 @@ struct PointLight
 	float exponent;
 };
 
+struct OmniShadowMap
+{
+	samplerCube shadowMap;
+	float farPlane;
+};
+
 struct Material
 {
 	float specularIntensity;
@@ -47,11 +53,23 @@ uniform PointLight pointLights[MAX_POINT_LIGHTS];
 
 uniform sampler2D theTexture;
 uniform sampler2D directionalShadowMap;
+uniform OmniShadowMap omniShadowMaps[MAX_POINT_LIGHTS]; // Shadow maps for point lights and spotlights
 
 uniform Material material;
 
 // Position of the eye, of the camera
 uniform vec3 eyePosition;
+
+// Predefined sample positions to approximate shadow values using the OmniShadowMap. This is PCF.
+// This covers all main key directions. Avoids doing too many samples which slows down our app.
+vec3 sampleOffsetDirections[20] = vec3[]
+(
+	vec3(1, 1, 1), vec3(1, -1, 1), vec3(-1, -1, 1), vec3(-1, 1, 1),
+	vec3(1, 1, -1), vec3(1, -1, -1), vec3(-1, -1, -1), vec3(-1, 1, -1),
+	vec3(1, 1, 0), vec3(1, -1, 0), vec3(-1, -1, 0), vec3(-1, 1, 0),
+	vec3(1, 0, 1), vec3(-1, 0, 1), vec3(1, 0, -1), vec3(-1, 0, -1),
+	vec3(0, 1, 1), vec3(0, -1, 1), vec3(0, -1, -1), vec3(0, 1, -1)
+);
 
 float CalcDirectionalShadowFactor(DirectionalLight light)
 {
@@ -103,6 +121,34 @@ float CalcDirectionalShadowFactor(DirectionalLight light)
 	return shadow;
 }
 
+float CalcOmniShadowFactor(PointLight light, int shadowIndex)
+{
+	vec3 fragToLight = fragPos - light.position; // Vector going from fragment to light
+	float currentDepth = length(fragToLight);
+	
+	float shadow = 0.0;
+	float bias = 0.05;
+	float samples = 20; // Amount of samples to take in.
+	// Calculating disk radius
+	// Distance in each direction to go into, using the samples.
+	// Calculated using the camera position so that the closer we get, the more blurred we want it.
+	float viewDistance = length(eyePosition - fragPos); // distance between camera and frag we are rendering
+	float diskRadius = (1.0 + (viewDistance /  omniShadowMaps[shadowIndex].farPlane)) / 25.0; // Scaling the value
+	
+	for(int i = 0; i < samples; i++)
+	{
+		float closestDepth = texture(omniShadowMaps[shadowIndex].shadowMap, fragToLight + sampleOffsetDirections[i] * diskRadius).r; // This samples in the direction by using xyz from our loops.
+		closestDepth *= omniShadowMaps[shadowIndex].farPlane; // Reconverting from the 0 to 1 scale to the actual scale according to our far plane. See the omni shadow map code.
+		if((currentDepth - bias) > closestDepth)
+		{
+			shadow += 1.0;
+		}
+	}
+	
+	shadow /= float(samples); // Taking the average of the samples we took. Here, we do number of samples cubed.
+	return shadow;
+}
+
 vec4 CalcLightByDirection(Light light, vec3 direction, float shadowFactor)
 {
 	vec4 ambientColour = vec4(light.colour, 1.0f) * light.ambientIntensity;
@@ -147,6 +193,25 @@ vec4 CalcDirectionalLight()
 	return CalcLightByDirection(directionalLight.base, directionalLight.direction, shadowFactor);
 }
 
+vec4 CalcPointLight(PointLight pLight, int shadowIndex)
+{
+	// Getting vector from point light to fragment.
+		vec3 direction = fragPos - pLight.position;
+		float distance = length(direction);
+		direction = normalize(direction);
+		
+		float shadowFactor = CalcOmniShadowFactor(pLight, shadowIndex);
+			
+		vec4 colour = CalcLightByDirection(pLight.base, direction, shadowFactor);
+		
+		// Formula to calculate attenuation. See theory.
+		float attenuation = pLight.exponent * distance * distance +
+							pLight.linear * distance +
+							pLight.constant;
+		return (colour / attenuation);
+}
+
+
 vec4 CalcPointLights()
 {
 	vec4 totalColour = vec4(0, 0, 0, 0);
@@ -154,19 +219,7 @@ vec4 CalcPointLights()
 	// Loop over point lights and add them to total colour.
 	for(int i =0; i < pointLightCount; i++)
 	{
-		// Getting vector from point light to fragment.
-		vec3 direction = fragPos - pointLights[i].position;
-		float distance = length(direction);
-		direction = normalize(direction);
-			
-		vec4 colour = CalcLightByDirection(pointLights[i].base, direction, 0.0f);
-		
-		// Formula to calculate attenuation. See theory.
-		float attenuation = pointLights[i].exponent * distance * distance +
-							pointLights[i].linear * distance +
-							pointLights[i].constant;
-		
-		totalColour += (colour / attenuation);
+		totalColour += CalcPointLight(pointLights[i], i); // 1 to 1 relation between point light index and shadow index.
 	}
 	
 	return totalColour;

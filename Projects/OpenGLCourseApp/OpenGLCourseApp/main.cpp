@@ -30,12 +30,16 @@ const float toRadians = 3.14159265f / 180.0f;
 GLuint uniformProjection = 0, uniformModel = 0, uniformView = 0,
 uniformEyePosition = 0,
 uniformSpecularIntensity = 0, uniformShininess = 0,
-uniformDirectionalLightTransform = 0;
+uniformDirectionalLightTransform = 0, 
+uniformOmniLightPos = 0, uniformFarPlane =0;
 
 Window mainWindow;
 std::vector<Mesh*> meshList;
+
 std::vector<Shader> shaderList;
 Shader directionalShadowShader;
+Shader omniShadowShader;
+
 Camera camera;
 
 // Textures
@@ -175,6 +179,7 @@ void CreateShaders()
 	shaderList.push_back(*shader1);
 
 	directionalShadowShader.CreateFromFiles("shaders/directional_shadow_map.vert", "shaders/directional_shadow_map.frag");
+	omniShadowShader.CreateFromFiles("shaders/omni_shadow_map.vert", "shaders/omni_shadow_map.geom", "shaders/omni_shadow_map.frag");
 }
 
 void RenderScene()
@@ -215,9 +220,34 @@ void DirectionalShadowMapPass(DirectionalLight* light)
 	uniformModel = directionalShadowShader.GetModelLocation();
 	directionalShadowShader.SetDirectionalLightTransform(&light->CalculateLightTransform());
 
+	directionalShadowShader.Validate();
 	RenderScene();
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0); // Unbinding the default buffer
+	glBindFramebuffer(GL_FRAMEBUFFER, 0); // Getting the default buffer
+}
+
+void OmniShadowMapPass(PointLight* light)
+{
+	omniShadowShader.UseShader();
+
+	// Makes sure the frame buffer we use is same size as the viewport. We set up the viewport to do so.
+	glViewport(0, 0, light->GetShadowMap()->GetShadowWidth(), light->GetShadowMap()->GetShadowHeight());
+
+	light->GetShadowMap()->Write(); // Setting the map to write mode.
+	glClear(GL_DEPTH_BUFFER_BIT); // Clear out the buffer.
+
+	uniformModel = omniShadowShader.GetModelLocation();
+	uniformOmniLightPos = omniShadowShader.GetOmniLightPosLocation();
+	uniformFarPlane = omniShadowShader.GetFarPlaneLocation();
+
+	glUniform3f(uniformOmniLightPos, light->GetPosition().x, light->GetPosition().y, light->GetPosition().z);
+	glUniform1f(uniformFarPlane, light->GetFarPlane());
+	omniShadowShader.SetLightMatrices(light->CalculateLightTransform());
+
+	omniShadowShader.Validate();
+	RenderScene();
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0); // Getting the default buffer
 }
 
 void RenderPass(glm::mat4 viewMatrix, glm::mat4 projectionMatrix)
@@ -243,15 +273,16 @@ void RenderPass(glm::mat4 viewMatrix, glm::mat4 projectionMatrix)
 	glUniform3f(uniformEyePosition, camera.getCameraPosition().x, camera.getCameraPosition().y, camera.getCameraPosition().z);
 
 	shaderList[0].SetDirectionalLight(&mainLight);
-	shaderList[0].SetPointLights(pointLights, pointLightCount);
+	shaderList[0].SetPointLights(pointLights, pointLightCount, 3, 0);
 	shaderList[0].SetDirectionalLightTransform(&mainLight.CalculateLightTransform());
 
 	// GL_TEXTURE0 is already bound to our pyramid texture, so we have to use another one.
 	// So with this, theTexture in our Shader will be Texture0 and directionalShadowMap will be Texture1
-	mainLight.GetShadowMap()->Read(GL_TEXTURE1);
-	shaderList[0].SetTexture(0); // 0 is our pyramid texture unit
-	shaderList[0].SetDirectionalShadowMap(1); // 1 is our shadow map texture unit.
+	mainLight.GetShadowMap()->Read(GL_TEXTURE2);
+	shaderList[0].SetTexture(1); // 1 is our pyramid texture unit
+	shaderList[0].SetDirectionalShadowMap(2); // 2 is our shadow map texture unit.
 
+	shaderList[0].Validate();
 	RenderScene();
 }
 
@@ -278,25 +309,29 @@ int main()
 	// Creating lights
 	mainLight = DirectionalLight(2048, 2048,
 								 1.0f, 1.0f, 1.0f, 
-								 0.1f, 0.3f,
+								 0.0f, 0.0f,
 								 0.0f, -15.0f, -10.0f);
 	// Initializing shadow map
 	mainLight.InitShadowMap();
 
-	/*
-	pointLights[0] = PointLight(0.0f, 0.0f, 1.0f,
-								0.0f, 0.1f,
+	
+	pointLights[0] = PointLight(1024, 1024,
+								0.01f, 100.0f,
+								0.0f, 0.0f, 1.0f,
+								0.0f, 1.0f,
 								0.0f, 0.0f, 0.0f,
 								0.3f, 0.2f, 0.1f);
-	pointLights[0].InitShadowMap();
+	//pointLights[0].InitShadowMap();
 	pointLightCount++;
 
-	pointLights[1] = PointLight(0.0f, 1.0f, 0.0f,
-								0.0f, 0.1f,
+	pointLights[1] = PointLight(1024, 1024,
+								0.01f, 100.0f,
+								0.0f, 1.0f, 0.0f,
+								0.0f, 1.0f,
 								-4.0f, 2.0f, 0.0f,
 								0.3f, 0.1f, 0.1f);
-	pointLights[1].InitShadowMap();
-	pointLightCount++;*/
+	//pointLights[1].InitShadowMap();
+	pointLightCount++;
 
 	GLuint uniformProjection = 0, uniformModel = 0, uniformView = 0, uniformEyePosition = 0,
 		uniformSpecularIntensity = 0, uniformShininess = 0;
@@ -327,6 +362,10 @@ int main()
 		camera.mouseControl(mainWindow.getXChange(), mainWindow.getYChange());
 		
 		DirectionalShadowMapPass(&mainLight); // Doing a directional shadow map pass for this light.
+		for (size_t i = 0; i < pointLightCount; i++)
+		{
+			OmniShadowMapPass(&pointLights[i]);
+		}	
 		RenderPass(camera.calculateViewMatrix(), projection);
 
 		glUseProgram(0);
