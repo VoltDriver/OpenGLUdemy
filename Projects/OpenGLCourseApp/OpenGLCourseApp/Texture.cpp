@@ -83,7 +83,7 @@ void Texture::LoadTexture()
 
 void Texture::UseTexture()
 {
-	glActiveTexture(GL_TEXTURE1 // Texture unit to use. Here, unit 1.
+	glActiveTexture(GL_TEXTURE0 // Texture unit to use. Here, unit 0.
 	);
 	// Binding our texture to the texture unit above.
 	glBindTexture(GL_TEXTURE_2D, textureID);

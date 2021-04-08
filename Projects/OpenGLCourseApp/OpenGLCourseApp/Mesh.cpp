@@ -27,7 +27,7 @@ void Mesh::CreateMesh(GLfloat *vertices, unsigned int *indices, unsigned int num
 		3, 
 		GL_FLOAT, 
 		GL_FALSE, 
-		sizeof(vertices[0]) * 8, // Skip 8 values as the Stride, because each of our value has 5 values in the array..
+		sizeof(vertices[0]) * 5, // Skip 5 values as the Stride, because each of our value has 5 values in the array..
 		0);
 	glEnableVertexAttribArray(0);
 
@@ -36,20 +36,10 @@ void Mesh::CreateMesh(GLfloat *vertices, unsigned int *indices, unsigned int num
 		2, // 2 values in our UV coords.
 		GL_FLOAT,
 		GL_FALSE,
-		sizeof(vertices[0]) * 8, // Skip 8 values as the Stride before we reach next uv coord
+		sizeof(vertices[0]) * 5, // Skip 5 values as the Stride before we reach next uv coord
 		(void*)(sizeof(vertices[0]) * 3) // Offset. Where to start for uv coords.
 	);
 	glEnableVertexAttribArray(1);
-
-	// Now we tell it how to handle the normal coords.
-	glVertexAttribPointer(2, // Normal coordinates
-		3, // our coordinates have x,y,z
-		GL_FLOAT,
-		GL_FALSE,
-		sizeof(vertices[0]) * 8, // Skip 8 values as the Stride before we reach next normal coord
-		(void*)(sizeof(vertices[0]) * 5) // Offset. Where to start for normal coords.
-	);
-	glEnableVertexAttribArray(2);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);

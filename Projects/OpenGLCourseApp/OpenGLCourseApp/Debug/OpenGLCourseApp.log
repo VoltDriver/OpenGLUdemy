@@ -1,5 +1,2 @@
-﻿  main.cpp
-D:\Users\Joel\Documents\GitHub\OpenGLUdemy\Projects\OpenGLCourseApp\OpenGLCourseApp\main.cpp(347,24): warning C4244: '=': conversion from 'double' to 'GLfloat', possible loss of data
-D:\Users\Joel\Documents\GitHub\OpenGLUdemy\Projects\OpenGLCourseApp\OpenGLCourseApp\main.cpp(352,15): warning C4244: 'initializing': conversion from 'double' to 'GLfloat', possible loss of data
-LINK : warning LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs; use /NODEFAULTLIB:library
+﻿  Texture.cpp
   OpenGLCourseApp.vcxproj -> D:\Users\Joel\Documents\GitHub\OpenGLUdemy\Projects\OpenGLCourseApp\Debug\OpenGLCourseApp.exe
